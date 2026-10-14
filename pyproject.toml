@@ -10,6 +10,8 @@ description = "Count lines, words and characters in text files."
 [project.optional-dependencies]
 test = [
     "pytest",
+    "coverage",
+    "mutmut",
 ]
 
 [tool.setuptools]
@@ -17,3 +19,7 @@ packages = ["tally"]
 
 [project.scripts]
 tally = "tally.cli:main"
+
+[tool.mutmut]
+paths_to_mutate = ["tally/"]
+tests_dir = ["tests/"]

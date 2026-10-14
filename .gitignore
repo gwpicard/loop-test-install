@@ -1,2 +1,5 @@
 .venv/
 .loop/
+coverage.json
+.coverage
+mutants/
