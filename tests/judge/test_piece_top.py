@@ -43,7 +43,7 @@ def test_D4_n_larger_than_distinct_words(tmp_path):
     assert result.returncode == 0
 
 
-def test_D5_no_words_prints_nothing(tmp_path):
+def test_top_no_words_reports_error(tmp_path):
     path = write(tmp_path, "123 !!! 456\n")
     result = run_tally("--top", "3", str(path), cwd=tmp_path)
     assert result.stderr == f"tally: {path}: no words\n"
