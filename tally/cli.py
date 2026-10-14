@@ -28,11 +28,15 @@ def parse_top(args):
     return int(args[1])
 
 
-def print_top(text, top):
+def print_top(text, top, name):
     words = re.findall(r"[a-z]+", text.lower())
+    if not words:
+        print(f"tally: {name}: no words", file=sys.stderr)
+        return 1
     counts = sorted(Counter(words).items(), key=lambda item: (-item[1], item[0]))
     for word, count in counts[:top]:
         print(f"{word} {count}")
+    return 0
 
 
 def print_counts(names):
@@ -58,11 +62,7 @@ def run_top(args):
     text = read_text(args[2])
     if text is None:
         return 2
-    if not re.search(r"[a-z]", text.lower()):
-        print(f"tally: {args[2]}: no words", file=sys.stderr)
-        return 1
-    print_top(text, top)
-    return 0
+    return print_top(text, top, args[2])
 
 
 def main(argv=None):
