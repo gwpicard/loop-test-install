@@ -46,9 +46,9 @@ def test_D4_n_larger_than_distinct_words(tmp_path):
 def test_D5_no_words_prints_nothing(tmp_path):
     path = write(tmp_path, "123 !!! 456\n")
     result = run_tally("--top", "3", str(path), cwd=tmp_path)
-    assert result.returncode == 0
+    assert result.stderr == f"tally: {path}: no words\n"
     assert result.stdout == ""
-    assert result.stderr == ""
+    assert result.returncode == 1
 
 
 def test_D6_invalid_n_exits_2(tmp_path):
