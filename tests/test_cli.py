@@ -64,3 +64,35 @@ def test_top_rejects_bad_number(tmp_path, capsys):
 def test_top_with_missing_file_fails(tmp_path, capsys):
     assert main(["--top", "1", str(tmp_path / "none.txt")]) == 2
     assert "No such file" in capsys.readouterr().err
+
+
+def test_D1_empty_file_reports_no_words_in_process(tmp_path, capsys):
+    empty = write_file(tmp_path, "empty.txt", "")
+    assert main(["--top", "2", empty]) == 1
+    captured = capsys.readouterr()
+    assert captured.err == f"tally: {empty}: no words\n"
+    assert captured.out == ""
+
+
+def test_D2_digits_and_punctuation_report_no_words_in_process(tmp_path, capsys):
+    only = write_file(tmp_path, "nums.txt", "123 !!! 456\n")
+    assert main(["--top", "2", only]) == 1
+    captured = capsys.readouterr()
+    assert captured.err == f"tally: {only}: no words\n"
+    assert captured.out == ""
+
+
+def test_D3_file_with_words_prints_top_in_process(tmp_path, capsys):
+    first = write_file(tmp_path, "a.txt", "b a b 123\n")
+    assert main(["--top", "2", first]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "b 2\na 1\n"
+    assert captured.err == ""
+
+
+def test_D4_empty_file_without_top_counts_zero_in_process(tmp_path, capsys):
+    empty = write_file(tmp_path, "empty.txt", "")
+    assert main([empty]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == f"0 0 0 {empty}\n"
+    assert captured.err == ""
