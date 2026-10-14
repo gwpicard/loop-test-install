@@ -23,3 +23,6 @@ tally = "tally.cli:main"
 [tool.mutmut]
 paths_to_mutate = ["tally/"]
 tests_dir = ["tests/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
