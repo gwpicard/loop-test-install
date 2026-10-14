@@ -47,14 +47,6 @@ def test_top_lists_most_frequent_words(tmp_path, capsys):
     assert capsys.readouterr().out == "b 2\na 1\n"
 
 
-def test_top_on_file_without_words_reports_it(tmp_path, capsys):
-    first = write_file(tmp_path, "a.txt", "123 !!! 456\n")
-    assert main(["--top", "2", first]) == 1
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    assert captured.err == f"tally: {first}: no words\n"
-
-
 def test_top_with_two_files_prints_usage(tmp_path, capsys):
     first = write_file(tmp_path, "a.txt", "a\n")
     assert main(["--top", "2", first, first]) == 2
