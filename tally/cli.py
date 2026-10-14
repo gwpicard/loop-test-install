@@ -58,6 +58,9 @@ def run_top(args):
     text = read_text(args[2])
     if text is None:
         return 2
+    if not re.search(r"[a-z]", text.lower()):
+        print(f"tally: {args[2]}: no words", file=sys.stderr)
+        return 1
     print_top(text, top)
     return 0
 
