@@ -56,5 +56,5 @@ def test_D6_invalid_n_exits_2(tmp_path):
     for bad in ("abc", "0"):
         result = run_tally("--top", bad, str(path), cwd=tmp_path)
         assert result.returncode == 2, bad
-        assert result.stderr.strip(), bad
+        assert "--top" in result.stderr, bad
         assert result.stdout == "", bad
