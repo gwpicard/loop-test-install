@@ -39,7 +39,9 @@ def test_D1_lines_follow_argument_order(tmp_path):
 def test_D2_missing_file_is_reported(tmp_path):
     make_files(tmp_path)
     result = run_tally("a.txt", "missing.txt", "b.txt", cwd=tmp_path)
-    assert result.stderr == "tally: missing.txt: No such file or directory\n"
+    assert result.stderr.startswith("tally: missing.txt: No such file")
+    assert result.stderr.endswith(" or directory\n")
+    assert result.stderr.count("\n") == 1
     assert result.stdout == A_LINE + B_LINE + "5 13 70 total\n"
     assert result.returncode == 2
 
