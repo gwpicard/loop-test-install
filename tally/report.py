@@ -24,19 +24,17 @@ def fail(message):
 def split_args(args):
     options = {"--no-summary": False}
     files = []
-    index = 0
-    while index < len(args):
-        arg = args[index]
+    remaining = iter(args)
+    for arg in remaining:
         if arg == "--no-summary":
             options[arg] = True
-        elif arg in VALUE_OPTIONS and index + 1 < len(args):
-            index += 1
-            options[arg] = args[index]
         elif arg in VALUE_OPTIONS:
-            return None
+            value = next(remaining, None)
+            if value is None:
+                return None
+            options[arg] = value
         else:
             files.append(arg)
-        index += 1
     return options, files
 
 
@@ -72,17 +70,15 @@ def tally_files(files):
     counts = Counter()
     spread = Counter()
     read = 0
-    failed = False
     for name in files:
         text = read_text(name)
         if text is None:
-            failed = True
             continue
         words = re.findall(r"[a-z]+(?:'[a-z]+)*", text.lower())
         read += 1
         counts.update(words)
         spread.update(set(words))
-    return counts, spread, read, failed
+    return counts, spread, read, read < len(files)
 
 
 def build_rows(counts, spread, minimum, order):
