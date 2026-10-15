@@ -21,8 +21,8 @@ packages = ["tally"]
 tally = "tally.cli:main"
 
 [tool.mutmut]
-paths_to_mutate = ["tally/"]
-tests_dir = ["tests/"]
+source_paths = ["tally/"]
+pytest_add_cli_args_test_selection = ["tests/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
