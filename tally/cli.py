@@ -2,6 +2,7 @@ import json
 import re
 import sys
 from collections import Counter
+from typing import NamedTuple
 
 
 def read_text(name):
@@ -20,26 +21,36 @@ def count_text(text):
 
 
 FORMATS = ("csv", "json", "table")
-SORTS = ("count", "alpha", "length")
+SORTS = ("count", "alpha")
 OPTION_NAMES = ("--top", "--format", "--sort", "--min-count", "--min-length")
-FLAG_NAMES = ("--summary",)
+FLAG_NAMES = ("--summary", "--longest-first")
+TOP_USAGE = "usage: tally --top N <file>"
 
 
-def parse_options(args):
-    rest = args[:-1]
+class Settings(NamedTuple):
+    top: int
+    min_count: int
+    min_length: int
+    fmt: str
+    order: str
+    summary: bool
+    longest: bool
+
+
+def split_args(args):
     options = {}
     index = 0
-    while index < len(rest):
-        name = rest[index]
+    while index < len(args) and args[index].startswith("--"):
+        name = args[index]
         if name in FLAG_NAMES:
             options[name] = True
             index += 1
-        elif name in OPTION_NAMES and index + 1 < len(rest):
-            options[name] = rest[index + 1]
+        elif name in OPTION_NAMES and index + 1 < len(args):
+            options[name] = args[index + 1]
             index += 2
         else:
             return None
-    return options if "--top" in options else None
+    return (options, args[index:]) if "--top" in options else None
 
 
 def check_number(options, name):
@@ -65,17 +76,23 @@ def check_choices(options):
     )
 
 
-def parse_top(args):
-    options = parse_options(args)
-    if options is None:
-        print("usage: tally --top N <file>", file=sys.stderr)
-        return None
+def read_settings(options):
     names = ("--top", "--min-count", "--min-length")
     numbers = [check_number(options, name) for name in names]
     if None in numbers or not check_choices(options):
         return None
     fmt, order = options.get("--format"), options.get("--sort")
-    return (*numbers, fmt, order, "--summary" in options)
+    flags = ("--summary" in options, "--longest-first" in options)
+    return Settings(*numbers, fmt, order, *flags)
+
+
+def parse_top(args, usage=TOP_USAGE, many=False):
+    split = split_args(args)
+    if split is None or not split[1] or (len(split[1]) > 1 and not many):
+        print(usage, file=sys.stderr)
+        return None
+    settings = read_settings(split[0])
+    return None if settings is None else (settings, split[1])
 
 
 def format_plain(rows):
@@ -133,47 +150,52 @@ def format_summary(rows, fmt, summary):
 
 
 def choose_rows(counts, settings):
-    top, _, _, _, order, _ = settings
-    rows = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:top]
-    if order == "alpha":
+    rows = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    rows = rows[: settings.top]
+    if settings.order == "alpha":
         rows.sort()
-    if order == "length":
+    if settings.longest:
         rows.sort(key=lambda item: (-len(item[0]), item[0]))
     return rows
 
 
 def keep_counts(counts, settings):
-    _, min_count, min_length, _, _, _ = settings
     return {
         word: count
         for word, count in counts.items()
-        if count >= min_count and len(word) >= min_length
+        if count >= settings.min_count and len(word) >= settings.min_length
     }
 
 
-def print_top(words, settings, name):
+def find_words(text):
+    return re.findall(r"[a-z]+(?:'[a-z]+)*", text.lower())
+
+
+def select_rows(words, settings):
+    """Return (rows, summary numbers); rows is empty when no word matches."""
     counts = Counter(words)
-    kept = keep_counts(counts, settings)
-    if not kept:
-        print(f"tally: {name}: no words match", file=sys.stderr)
-        return 1
-    rows = choose_rows(kept, settings)
-    fmt, summary = settings[3], settings[5]
-    if summary:
-        lines = format_summary(rows, fmt, (len(words), len(counts), len(rows)))
-    else:
-        lines = FORMATTERS[fmt](rows)
-    for line in lines:
-        print(line)
-    return 0
+    rows = choose_rows(keep_counts(counts, settings), settings)
+    return rows, (len(words), len(counts), len(rows))
+
+
+def report_lines(rows, settings, summary):
+    if settings.summary:
+        return format_summary(rows, settings.fmt, summary)
+    return FORMATTERS[settings.fmt](rows)
 
 
 def report_top(text, settings, name):
-    words = re.findall(r"[a-z]+(?:'[a-z]+)*", text.lower())
+    words = find_words(text)
     if not words:
         print(f"tally: {name}: no words", file=sys.stderr)
         return 1
-    return print_top(words, settings, name)
+    rows, summary = select_rows(words, settings)
+    if not rows:
+        print(f"tally: {name}: no words match", file=sys.stderr)
+        return 1
+    for line in report_lines(rows, settings, summary):
+        print(line)
+    return 0
 
 
 def print_counts(names):
@@ -193,17 +215,22 @@ def print_counts(names):
 
 
 def run_top(args):
-    settings = parse_top(args)
-    if settings is None:
+    parsed = parse_top(args)
+    if parsed is None:
         return 2
-    text = read_text(args[-1])
+    settings, (name,) = parsed
+    text = read_text(name)
     if text is None:
         return 2
-    return report_top(text, settings, args[-1])
+    return report_top(text, settings, name)
 
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
+    if args and args[0] == "--by-file":
+        from tally.byfile import run_by_file
+
+        return run_by_file(args[1:])
     if args and args[0] in OPTION_NAMES + FLAG_NAMES and "--top" in args:
         return run_top(args)
     if not args:
