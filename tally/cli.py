@@ -140,7 +140,14 @@ def run_top(args):
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
+    if args and args[0] == "--report":
+        from tally.report import run_report
+
+        return run_report(args[1:])
     if args and args[0] in OPTION_NAMES and "--top" in args:
+        if "--report" in args:
+            print("tally: --top cannot be used with --report", file=sys.stderr)
+            return 2
         return run_top(args)
     if not args:
         print("usage: tally <file>", file=sys.stderr)
