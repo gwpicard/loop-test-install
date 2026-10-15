@@ -39,18 +39,16 @@ class Settings(NamedTuple):
 
 def split_args(args):
     options = {}
-    index = 0
-    while index < len(args) and args[index].startswith("--"):
-        name = args[index]
+    rest = list(args)
+    while rest and rest[0].startswith("--"):
+        name = rest.pop(0)
         if name in FLAG_NAMES:
             options[name] = True
-            index += 1
-        elif name in OPTION_NAMES and args[index + 1 :]:
-            options[name] = args[index + 1]
-            index += 2
+        elif name in OPTION_NAMES and rest:
+            options[name] = rest.pop(0)
         else:
             return None
-    return (options, args[index:]) if "--top" in options else None
+    return (options, rest) if "--top" in options else None
 
 
 def check_number(options, name):
