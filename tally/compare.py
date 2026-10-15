@@ -92,7 +92,7 @@ def count_words(text):
     return Counter(re.findall(r"[a-z]+(?:'[a-z]+)*", text.lower()))
 
 
-def build_table(labels, counters):
+def build_table(counters):
     vocabulary = sorted(set().union(*counters))
     table = []
     for word in vocabulary:
@@ -170,7 +170,7 @@ def format_csv(tables):
     for name, (header, rows) in tables.items():
         buffer = io.StringIO()
         csv.writer(buffer, lineterminator="\n").writerows([header] + rows)
-        blocks.append(f"# {name}\n" + buffer.getvalue().rstrip("\n"))
+        blocks.append(f"# {name}\n" + buffer.getvalue()[:-1])
     return "\n\n".join(blocks)
 
 
@@ -241,7 +241,7 @@ def run_compare(args):
         return 2
     labels = list(texts)
     counters = [count_words(text) for text in texts.values()]
-    full = build_table(labels, counters)
+    full = build_table(counters)
     if not full:
         print("tally: no words", file=sys.stderr)
         return 1

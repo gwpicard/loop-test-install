@@ -326,6 +326,7 @@ def test_words_in_one_file_only(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     _, out, _ = run(capsys, "a.txt", "b.txt", "--format", "json")
     data = json.loads(out)
+    assert data["per_file"][0] == {"file": "a.txt", "words": 2, "unique": 2, "exclusive": 2}
     assert data["totals"]["shared"] == 0
     assert data["totals"]["exclusive"] == 2
     assert data["per_file"][1] == {"file": "b.txt", "words": 0, "unique": 0, "exclusive": 0}
