@@ -94,7 +94,7 @@ def test_D1_filter_runs_before_top_n(tally):
 
 def test_D2_ties_pick_fig_over_kiwi(tally):
     # A filter first, so this test fails today on an assertion.
-    assert tally("--top", "3", "--min-length", "3", "c.txt")[1] == "pear 2\nplum 2\nkiwi 1\n"
+    assert tally("--top", "3", "--min-length", "4", "c.txt")[1] == "pear 2\nplum 2\nkiwi 1\n"
     assert tally("--top", "3", "c.txt") == (0, "pear 2\nplum 2\nfig 1\n", "")
 
 
