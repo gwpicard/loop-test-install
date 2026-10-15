@@ -21,6 +21,7 @@ def count_text(text):
 
 FORMATS = ("csv", "json", "table")
 SORTS = ("count", "alpha")
+OPTION_NAMES = ("--top", "--format", "--sort")
 
 
 def parse_options(args):
@@ -28,7 +29,7 @@ def parse_options(args):
         return None
     options = {}
     for name, value in zip(args[::2], args[1::2]):
-        if name not in ("--top", "--format", "--sort"):
+        if name not in OPTION_NAMES:
             return None
         options[name] = value
     return options if "--top" in options else None
@@ -139,7 +140,7 @@ def run_top(args):
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
-    if args and args[0] in ("--top", "--format", "--sort") and "--top" in args:
+    if args and args[0] in OPTION_NAMES and "--top" in args:
         return run_top(args)
     if not args:
         print("usage: tally <file>", file=sys.stderr)
