@@ -66,7 +66,7 @@ def parse_top(args):
 
 
 def format_plain(rows):
-    return [f"{word} {count}" for word, count in rows]
+    return [" ".join((word, str(count))) for word, count in rows]
 
 
 def format_csv(rows):
