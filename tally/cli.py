@@ -24,10 +24,10 @@ SORTS = ("count", "alpha")
 
 
 def parse_options(args):
-    if len(args) % 2 == 0 or len(args) > 7:
+    if len(args) not in (3, 5, 7):
         return None
     options = {}
-    for name, value in zip(args[0:-1:2], args[1:-1:2]):
+    for name, value in zip(args[::2], args[1::2]):
         if name not in ("--top", "--format", "--sort"):
             return None
         options[name] = value
@@ -62,7 +62,7 @@ def parse_top(args):
         return None
     if not check_choice(options, "--sort", SORTS):
         return None
-    return top, options.get("--format"), options.get("--sort", "count")
+    return top, options.get("--format"), options.get("--sort")
 
 
 def format_plain(rows):
