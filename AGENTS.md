@@ -7,3 +7,4 @@ Quality: `python3 "$AI_LOOP_KIT_ROOT/quality/mutmut-changed.py" origin/main`
 Quality: `python -m coverage run -m pytest && coverage json -o coverage.json && python3 "$AI_LOOP_KIT_ROOT/quality/crap.py" --coverage coverage.json --base origin/main`
 Standards: `STANDARDS.md`
 Protected paths: `AGENTS.md, STANDARDS.md, .github`
+Idle limit: 2
