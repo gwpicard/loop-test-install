@@ -197,7 +197,7 @@ def format_markdown(tables):
 
 def format_json(tables, labels):
     data = {"files": labels}
-    for name, (header, rows) in tables.items():
+    for name, (_, rows) in tables.items():
         data[name] = json_section(name, labels, rows)
     return json.dumps(data)
 
