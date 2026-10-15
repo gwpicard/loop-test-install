@@ -20,24 +20,32 @@ def count_text(text):
 
 
 FORMATS = ("csv", "json", "table")
-SORTS = ("count", "alpha")
-OPTION_NAMES = ("--top", "--format", "--sort")
+SORTS = ("count", "alpha", "length")
+OPTION_NAMES = ("--top", "--format", "--sort", "--min-count", "--min-length")
+FLAG_NAMES = ("--summary",)
 
 
 def parse_options(args):
-    if len(args) not in (3, 5, 7):
-        return None
+    rest = args[:-1]
     options = {}
-    for name, value in zip(args[::2], args[1::2]):
-        if name not in OPTION_NAMES:
+    index = 0
+    while index < len(rest):
+        name = rest[index]
+        if name in FLAG_NAMES:
+            options[name] = True
+            index += 1
+        elif name in OPTION_NAMES and index + 1 < len(rest):
+            options[name] = rest[index + 1]
+            index += 2
+        else:
             return None
-        options[name] = value
     return options if "--top" in options else None
 
 
-def check_top(value):
+def check_number(options, name):
+    value = options.get(name, "1")
     if not value.isascii() or not value.isdigit() or int(value) < 1:
-        print("tally: --top needs a whole number of at least 1", file=sys.stderr)
+        print(f"tally: {name} needs a whole number of at least 1", file=sys.stderr)
         return None
     return int(value)
 
@@ -51,19 +59,23 @@ def check_choice(options, name, allowed):
     return True
 
 
+def check_choices(options):
+    return check_choice(options, "--format", FORMATS) and check_choice(
+        options, "--sort", SORTS
+    )
+
+
 def parse_top(args):
     options = parse_options(args)
     if options is None:
         print("usage: tally --top N <file>", file=sys.stderr)
         return None
-    top = check_top(options["--top"])
-    if top is None:
+    names = ("--top", "--min-count", "--min-length")
+    numbers = [check_number(options, name) for name in names]
+    if None in numbers or not check_choices(options):
         return None
-    if not check_choice(options, "--format", FORMATS):
-        return None
-    if not check_choice(options, "--sort", SORTS):
-        return None
-    return top, options.get("--format"), options.get("--sort")
+    fmt, order = options.get("--format"), options.get("--sort")
+    return (*numbers, fmt, order, "--summary" in options)
 
 
 def format_plain(rows):
@@ -74,8 +86,12 @@ def format_csv(rows):
     return ["word,count"] + [f"{word},{count}" for word, count in rows]
 
 
+def json_rows(rows):
+    return [{"word": word, "count": count} for word, count in rows]
+
+
 def format_json(rows):
-    return [json.dumps([{"word": word, "count": count} for word, count in rows])]
+    return [json.dumps(json_rows(rows))]
 
 
 def format_table(rows):
@@ -94,12 +110,60 @@ FORMATTERS = {
 }
 
 
-def print_top(words, settings):
-    top, fmt, order = settings
-    counts = sorted(Counter(words).items(), key=lambda item: (-item[1], item[0]))[:top]
+def summary_values(summary):
+    words, unique, shown = summary
+    return {"words": words, "unique": unique, "shown": shown, "hidden": unique - shown}
+
+
+def summary_line(summary):
+    values = summary_values(summary)
+    return "summary: " + " ".join(f"{key}={value}" for key, value in values.items())
+
+
+def format_summary(rows, fmt, summary):
+    if fmt == "json":
+        data = {"rows": json_rows(rows), "summary": summary_values(summary)}
+        return [json.dumps(data)]
+    lines = FORMATTERS[fmt](rows)
+    if fmt == "csv":
+        return lines + ["# " + summary_line(summary)]
+    if fmt == "table":
+        lines.append("")
+    return lines + [summary_line(summary)]
+
+
+def choose_rows(counts, settings):
+    top, _, _, _, order, _ = settings
+    rows = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:top]
     if order == "alpha":
-        counts.sort()
-    for line in FORMATTERS[fmt](counts):
+        rows.sort()
+    if order == "length":
+        rows.sort(key=lambda item: (-len(item[0]), item[0]))
+    return rows
+
+
+def keep_counts(counts, settings):
+    _, min_count, min_length, _, _, _ = settings
+    return {
+        word: count
+        for word, count in counts.items()
+        if count >= min_count and len(word) >= min_length
+    }
+
+
+def print_top(words, settings, name):
+    counts = Counter(words)
+    kept = keep_counts(counts, settings)
+    if not kept:
+        print(f"tally: {name}: no words match", file=sys.stderr)
+        return 1
+    rows = choose_rows(kept, settings)
+    fmt, summary = settings[3], settings[5]
+    if summary:
+        lines = format_summary(rows, fmt, (len(words), len(counts), len(rows)))
+    else:
+        lines = FORMATTERS[fmt](rows)
+    for line in lines:
         print(line)
     return 0
 
@@ -109,7 +173,7 @@ def report_top(text, settings, name):
     if not words:
         print(f"tally: {name}: no words", file=sys.stderr)
         return 1
-    return print_top(words, settings)
+    return print_top(words, settings, name)
 
 
 def print_counts(names):
@@ -140,7 +204,7 @@ def run_top(args):
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
-    if args and args[0] in OPTION_NAMES and "--top" in args:
+    if args and args[0] in OPTION_NAMES + FLAG_NAMES and "--top" in args:
         return run_top(args)
     if not args:
         print("usage: tally <file>", file=sys.stderr)
