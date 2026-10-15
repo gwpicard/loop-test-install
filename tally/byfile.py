@@ -81,7 +81,7 @@ def print_entries(entries, settings):
 
 
 def exit_code(statuses):
-    return 2 if 2 in statuses else max(statuses, default=0)
+    return max(statuses, default=0)
 
 
 def run_by_file(args):
