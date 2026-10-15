@@ -36,7 +36,7 @@ def print_top(words, top):
 
 
 def report_top(text, top, name):
-    words = re.findall(r"[a-z]+", text.lower())
+    words = re.findall(r"[a-z]+(?:'[a-z]+)*", text.lower())
     if not words:
         print(f"tally: {name}: no words", file=sys.stderr)
         return 1
