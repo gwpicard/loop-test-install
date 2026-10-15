@@ -140,6 +140,10 @@ def run_top(args):
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
+    if args and args[0] == "--compare":
+        from tally.compare import run_compare
+
+        return run_compare(args[1:])
     if args and args[0] in OPTION_NAMES and "--top" in args:
         return run_top(args)
     if not args:
