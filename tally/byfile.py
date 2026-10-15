@@ -15,7 +15,7 @@ USAGE = "usage: tally --by-file --top N <file>..."
 
 
 def file_report(name, settings):
-    """Return (entry, status); entry is None when the file has no rows."""
+    """Return (entry, status); entry is None when the file is not counted."""
     text = read_text(name)
     if text is None:
         return None, 2
@@ -26,12 +26,11 @@ def file_report(name, settings):
     rows, summary = select_rows(words, settings)
     if not rows:
         print(f"tally: {name}: no words match", file=sys.stderr)
-        return None, 1
-    return (name, rows, summary), 0
+    return (name, rows, summary, set(words)), (0 if rows else 1)
 
 
 def json_entry(entry, settings):
-    name, rows, summary = entry
+    name, rows, summary, _ = entry
     data = {"file": name, "rows": json_rows(rows)}
     if settings.summary:
         data["summary"] = summary_values(summary)
@@ -41,20 +40,44 @@ def json_entry(entry, settings):
 def text_blocks(entries, settings):
     return [
         [f"==> {name} <=="] + report_lines(rows, settings, summary)
-        for name, rows, summary in entries
+        for name, rows, summary, _ in entries
+        if rows
     ]
+
+
+def global_summary(entries):
+    vocab = set().union(*[entry[3] for entry in entries])
+    shown = {word for entry in entries for word, _ in entry[1]}
+    values = {"files": len(entries), "words": sum(entry[2][0] for entry in entries)}
+    values.update(unique=len(vocab), shown=len(shown), hidden=len(vocab) - len(shown))
+    return values
+
+
+def global_line(values, fmt):
+    text = "summary (all files): " + " ".join(f"{k}={v}" for k, v in values.items())
+    return "# " + text if fmt == "csv" else text
+
+
+def print_json(entries, settings):
+    data = {"files": [json_entry(e, settings) for e in entries if e[1]]}
+    if settings.summary:
+        data["summary"] = global_summary(entries)
+    print(json.dumps(data))
 
 
 def print_entries(entries, settings):
     if settings.fmt == "json":
-        data = {"files": [json_entry(entry, settings) for entry in entries]}
-        print(json.dumps(data))
-        return
-    for index, block in enumerate(text_blocks(entries, settings)):
+        return print_json(entries, settings)
+    blocks = text_blocks(entries, settings)
+    for index, block in enumerate(blocks):
         if index:
             print()
         for line in block:
             print(line)
+    if settings.summary:
+        if blocks:
+            print()
+        print(global_line(global_summary(entries), settings.fmt))
 
 
 def exit_code(statuses):
