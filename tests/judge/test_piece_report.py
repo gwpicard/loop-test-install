@@ -237,7 +237,7 @@ def test_D6_file_named_report_still_counted(tmp_path, capsys, monkeypatch):
     assert (code, out, err) == (0, "1 2 8 report\n", "")
 
 
-def test_D6_top_with_report_rejected(tmp_path, capsys):
+def test_D7_top_with_report_rejected(tmp_path, capsys):
     a = tmp_path / "a.txt"
     a.write_text("one two\n", encoding="utf-8")
     for args in (
