@@ -45,7 +45,7 @@ def split_args(args):
         if name in FLAG_NAMES:
             options[name] = True
             index += 1
-        elif name in OPTION_NAMES and index + 1 < len(args):
+        elif name in OPTION_NAMES and args[index + 1 :]:
             options[name] = args[index + 1]
             index += 2
         else:
@@ -82,7 +82,7 @@ def read_settings(options):
     if None in numbers or not check_choices(options):
         return None
     fmt, order = options.get("--format"), options.get("--sort")
-    flags = ("--summary" in options, "--longest-first" in options)
+    flags = (options.get("--summary") is True, options.get("--longest-first") is True)
     return Settings(*numbers, fmt, order, *flags)
 
 
